@@ -1,10 +1,9 @@
 (*
-  A simple List class
+  A simple List class for testing COOL features.
 *)
 class List {
   item: Object;
   next: List;
-  str: A2I <- new A2I;
 
   init(in_item: Object, in_next: List): List {
     {
@@ -18,7 +17,7 @@ class List {
     let
     string: String <-
       case item of
-        i: Int => str.i2a(i);
+        i: Int => (new A2I).i2a(i);
         s: String => s;
         o: Object => { abort(); ""; };
       esac
