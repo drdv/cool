@@ -1,6 +1,9 @@
 """Finate automaton implementation."""
+import os
 from collections import defaultdict
+import subprocess
 import logging
+
 log = logging.getLogger(__name__)
 
 class State:
@@ -53,7 +56,7 @@ class State:
         """
         self.active = self.newly_activated = True
         log.info('activate: {}'.format(self.name))
-        # it this check is not performed, '$' is added to the defaultdict transitions
+        # if this check is not performed, '$' is added to the defaultdict transitions
         if '$' in self.transitions:
             for s in self.transitions['$']:
                 s._activate()
@@ -127,6 +130,8 @@ class Automaton:
 
         self._verify_states()
 
+        self.edges = self._identify_multiple_edges()
+
         self.q0._activate()
         self._reset_new_activations()
 
@@ -171,6 +176,60 @@ class Automaton:
         """Return `True` if the automaton accepts the processed input."""
         A = self.active_states
         return any([True if s in A else False for s in self.F])
+
+    def show_dot(self, filename=None, rankdir='LR'):
+        """Display the dot diagram."""
+        if filename is None:
+            filename = '_fa.png'
+        tmp_name, extension = os.path.splitext(os.path.basename(filename))
+        extension = extension[1:]
+
+        with open(tmp_name + '.dot', 'w') as h:
+            h.write(self.to_dot(rankdir))
+
+        subprocess.call(['dot',
+                         '-T{}'.format(extension),
+                         tmp_name + '.dot',
+                         '-o',
+                         filename])
+        subprocess.call(['rm', tmp_name + '.dot'])
+
+    def to_dot(self, rankdir='LR'):
+        """Visualize with graphviz dot."""
+        dot_str = 'digraph FA {\n'
+        dot_str += 'graph [dpi=300]\n'
+        dot_str += 'edge [arrowhead="empty"]\n'
+        dot_str += 'rankdir={}\n'.format(rankdir)
+
+        # nodes
+        for state in self.Q:
+            s = '"{0}"[label="{0}", shape={1} {2}]\n'
+            color = ', fillcolor=lightgray, style=filled'
+            dot_str += s.format(state.name,
+                                'doublecircle' if state in self.F else 'circle',
+                                color if state.is_active() else '')
+
+        # edges
+        for (state1, state2), letters in self.edges.items():
+            if '$' in letters:
+                letters = ['&#949;' if l=='$' else l for l in letters]
+            dot_str += '"{}" -> "{}"[label="{}"]\n'.format(state1.name,
+                                                           state2.name,
+                                                           ', '.join(letters))
+
+        dot_str += '}\n'
+
+        return dot_str
+
+    def _identify_multiple_edges(self):
+        """Identify multiple edges between two nodes (for plotting purposes)."""
+        edges = defaultdict(list)
+        for state in self.Q:
+            for letter, next_states in state.transitions.items():
+                for s in next_states:
+                    edges[(state, s)].append(letter)
+
+        return edges
 
     def _reset_new_activations(self):
         """Reset new state activations (after a transition has been completed)."""
