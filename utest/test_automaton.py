@@ -89,3 +89,37 @@ class TestAutomaton(unittest.TestCase):
         self.assertListEqual(M.active_states, [q1, q4])
 
         self.assertTrue(M.is_accepted())
+
+    def test_nfa_nfa_1(self):
+        """Convertion from NFA to DFA."""
+        q1, q2, q3 = map(State, ['q1', 'q2', 'q3'])
+
+        q1.add_transition('b', q2)
+        q1.add_transition('$', q3)
+        q2.add_transition('a', [q2, q3])
+        q2.add_transition('b', q3)
+        q3.add_transition('a', q1)
+
+        M = Automaton('M', [q1, q2, q3], ['a', 'b'], q1, [q1])
+        D = M.to_dfa()
+
+        self.assertTrue('q1' in D.Q[0].ready)
+        self.assertTrue('q3' in D.Q[0].ready)
+        self.assertEqual(len(D.Q[0].ready), 2)
+
+        self.assertTrue('q2' in D.Q[1].ready)
+        self.assertEqual(len(D.Q[1].ready), 1)
+
+        self.assertTrue('q2' in D.Q[2].ready)
+        self.assertTrue('q3' in D.Q[2].ready)
+        self.assertEqual(len(D.Q[2].ready), 2)
+
+        self.assertTrue('q3' in D.Q[3].ready)
+        self.assertEqual(len(D.Q[3].ready), 1)
+
+        self.assertTrue('q1' in D.Q[4].ready)
+        self.assertTrue('q2' in D.Q[4].ready)
+        self.assertTrue('q3' in D.Q[4].ready)
+        self.assertEqual(len(D.Q[4].ready), 3)
+
+        self.assertEqual(len(D.Q[5].ready), 0)
