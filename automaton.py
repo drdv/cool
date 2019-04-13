@@ -184,8 +184,7 @@ class Automaton:
 
         Note
         -----
-        The following example is clear:
-        http://web.cecs.pdx.edu/~harry/compilers/slides/LexicalPart3.pdf
+        Clear example: Dragon book, Section 3.7.1.
 
         """
         if self.is_dfa():

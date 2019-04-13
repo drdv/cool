@@ -133,10 +133,18 @@ class TestUtils(unittest.TestCase):
         # disable logging at all levels
         logging.disable(logging.CRITICAL)
 
-    def test_infix2postfix(self):
+    def test_infix2postfix_1(self):
         """Test infix2postfix."""
         infix = '(a+b)*(a+c)+a+b*c'
         self.assertEqual(utils.infix2postfix(infix), 'ab+ac+*a+bc*+')
+
+    def test_infix2postfix_2(self):
+        """Test infix2postfix."""
+        infix = utils.add_explicit_concatenation('a|b*abb')
+        postfix = utils.infix2postfix(infix,
+                                      priority={'*': 2, '.': 1, '|': 0})
+
+        self.assertEqual(postfix, 'ab*a.b.b.|')
 
     def test_postfix_eval(self):
         """Test postfix_eval."""
@@ -146,3 +154,11 @@ class TestUtils(unittest.TestCase):
 
         postfix = utils.infix2postfix('((2 + 3) * (4 + 5) + 1)*2 + 1')
         self.assertEqual(utils.postfix_eval(postfix, op_apply), 93)
+
+    def test_explicit_concatenation(self):
+        """Test adding explicit concatenation."""
+        self.assertEqual(utils.add_explicit_concatenation('a|b*abb'),
+                         'a|b*.a.b.b')
+
+        self.assertEqual(utils.add_explicit_concatenation('a|b*ab.b'),
+                         'a|b*.a.b.b')
