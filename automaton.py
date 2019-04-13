@@ -3,6 +3,7 @@ import os
 from collections import defaultdict
 import subprocess
 import logging
+from IPython.display import Image, display
 
 log = logging.getLogger(__name__)
 
@@ -99,7 +100,7 @@ class State:
 
         """
         for letter in self.transitions.keys():
-            if letter not in Sigma:
+            if letter not in Sigma + ['$']:
                 return False
 
         return True
@@ -135,13 +136,13 @@ class Automaton:
         self.Q = Q
         self.Sigma = Sigma
         self.q0 = q0
-        if not isinstance(F, list):
-            raise ValueError('Accepted states should be a list.')
-        self.F = F
+        self.F = []
+        if isinstance(F, list):
+            self.F.extend(F)
+        else:
+            self.F.append(F)
 
         self._verify_states()
-
-        self.edges = self._identify_multiple_edges()
 
         self.q0._activate()
         self._reset_new_activations()
@@ -292,6 +293,7 @@ class Automaton:
                          '-o',
                          filename])
         subprocess.call(['rm', tmp_name + '.dot'])
+        display(Image(filename))
 
     def to_dot(self, rankdir='LR', dpi=300):
         """Visualize with graphviz dot."""
@@ -301,6 +303,7 @@ class Automaton:
         dot_str += 'rankdir={}\n'.format(rankdir)
 
         # nodes
+        dot_str += '"" [shape=none]\n'
         for state in self.Q:
             s = '"{0}"[label="{0}", shape={1} {2}]\n'
             color = ', fillcolor=lightgray, style=filled'
@@ -309,7 +312,9 @@ class Automaton:
                                 color if state.is_active() else '')
 
         # edges
-        for (state1, state2), letters in self.edges.items():
+        dot_str += '"" -> {}\n'.format(self.q0.name)
+        edges = self._identify_multiple_edges()
+        for (state1, state2), letters in edges.items():
             if '$' in letters:
                 letters = ['&#949;' if l=='$' else l for l in letters]
             dot_str += '"{}" -> "{}"[label="{}"]\n'.format(state1.name,
@@ -344,7 +349,8 @@ class Automaton:
     def _verify_states(self):
         """Verify validity of states."""
         for s in self.Q:
-            s._verify_alphabet(self.Sigma)
+            if not s._verify_alphabet(self.Sigma):
+                log.warning('Transition letters not contained in alphabet.')
 
         # names of states should be unique
         assert len(self.Q) == len(set([s.name for s in self.Q]))

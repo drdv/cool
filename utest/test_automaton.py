@@ -28,7 +28,7 @@ class TestAutomaton(unittest.TestCase):
         q2.add_transition('b', q3)
         q3.add_transition('a', q1)
 
-        M = Automaton('M', [q1, q2, q3], ['a', 'b'], q1, [q1])
+        M = Automaton('M', [q1, q2, q3], ['a', 'b'], q1, q1)
 
         self.assertListEqual(M.active_states, [q1, q3])
         M.transition('b')
@@ -71,7 +71,7 @@ class TestAutomaton(unittest.TestCase):
         q3.add_transition('1', q4)
         q3.add_transition('$', q4)
 
-        M = Automaton('M', [q1, q2, q3, q4], ['0', '1'], q1, [q4])
+        M = Automaton('M', [q1, q2, q3, q4], ['0', '1'], q1, q4)
 
         self.assertListEqual(M.active_states, [q1])
         M.transition('0')
@@ -101,7 +101,7 @@ class TestAutomaton(unittest.TestCase):
         q2.add_transition('b', q3)
         q3.add_transition('a', q1)
 
-        M = Automaton('M', [q1, q2, q3], ['a', 'b'], q1, [q1])
+        M = Automaton('M', [q1, q2, q3], ['a', 'b'], q1, q1)
         D = M.to_dfa()
 
         self.assertTrue('q1' in D.Q[0].ready)
@@ -162,3 +162,6 @@ class TestUtils(unittest.TestCase):
 
         self.assertEqual(utils.add_explicit_concatenation('a|b*ab.b'),
                          'a|b*.a.b.b')
+
+        self.assertEqual(utils.add_explicit_concatenation('a(a|b)*abb*ba|bb(a|b)(a|b*xg)'),
+                         'a.(a|b)*.a.b.b*.b.a|b.b.(a|b).(a|b*.x.g)')

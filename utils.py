@@ -1,5 +1,6 @@
 import os
 import subprocess
+import re
 from IPython.display import Image, display
 
 def infix2postfix(infix, priority=None):
@@ -45,6 +46,12 @@ def postfix_eval(postfix, op_apply):
 
     return var_stack[0]
 
+# use of lookahead assertion (?=...) prevents consuming the second pattern
+pattern1 = re.compile(r'([a-zA-Z])(?=[a-zA-Z])')
+pattern2 = re.compile(r'([a-zA-Z])(\()')
+pattern3 = re.compile(r'(\))([a-zA-Z])')
+pattern3 = re.compile(r'(\))(\()')
+pattern4 = re.compile(r'(\*)([a-zA-Z])')
 def add_explicit_concatenation(infix):
     """Add explicit concatenation operator to an infix format.
 
@@ -56,20 +63,14 @@ def add_explicit_concatenation(infix):
 
     Example
     --------
-    infix_add_explicit_concatenation('(a|b)*abb') -> '(a|b)*.a.b.b'
-    infix_add_explicit_concatenation('(a|b)*a.bb') -> '(a|b)*.a.b.b'
+    add_explicit_concatenation('a(a|b)*a.bb') -> 'a.(a|b)*.a.b.b'
     """
-    modified_infix = []
-    for l in infix:
-        if l in ['(', ')', '|', '.', '*']:
-            modified_infix.append(l)
-        else:
-            # note that * is a unary operator
-            if modified_infix and modified_infix[-1] not in ['(', ')', '|', '.']:
-                modified_infix.append('.')
-            modified_infix.append(l)
+    infix = re.sub(pattern1, r'\1.', infix)
+    infix = re.sub(pattern2, r'\1.\2', infix)
+    infix = re.sub(pattern3, r'\1.\2', infix)
+    infix = re.sub(pattern4, r'\1.\2', infix)
 
-    return ''.join(modified_infix)
+    return infix
 
 class Node():
     def __init__(self, value=None, left=None, right=None):
