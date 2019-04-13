@@ -24,6 +24,22 @@ class State:
         self.active = False
         self._newly_activated = False
 
+    def clone_transitions(self, other):
+        """Copy the transitions from another state.
+
+        Assumption: no transitions have been defined yet.
+
+        Parameters
+        -----------
+        other : :obj:`State`
+            State whose transitions to copy.
+        """
+        if len(self.transitions) > 0:
+            log.warning('Transitions for state {} already exist.'.format(self.name))
+
+        for key, value in other.transitions.items():
+            self.transitions[key] = value
+
     def is_active(self):
         return self.active
 
@@ -359,3 +375,61 @@ class Automaton:
         """Describe object."""
         return '{}: {}'.format(self.name,
                                sorted([s.name for s in self.active_states]))
+
+_STATE_REGISTER = []
+class ThompsonConstruction:
+    """Regex to NFA."""
+    @staticmethod
+    def get_state_name():
+        new_state = State('s{}'.format(len(_STATE_REGISTER)))
+        _STATE_REGISTER.append(new_state)
+        return new_state
+
+    @staticmethod
+    def create_expr(letter):
+        """NFA of a new expression."""
+        initial_state = State(ThompsonConstruction.get_state_name())
+        out_state = State(ThompsonConstruction.get_state_name())
+
+        initial_state.add_transition(letter, out_state)
+
+        return {'initial_state': initial_state,
+                'out_state': out_state}
+
+    @staticmethod
+    def expr_union(expr1, expr2):
+        """NFA of the union of two expressions."""
+        initial_state = State(ThompsonConstruction.get_state_name())
+        out_state = State(ThompsonConstruction.get_state_name())
+
+        initial_state.add_transition('$', [expr1['initial_state'],
+                                           expr2['initial_state']])
+
+        expr1['out_state'].add_transition('$', out_state)
+        expr2['out_state'].add_transition('$', out_state)
+
+        return {'initial_state': initial_state,
+                'out_state': out_state}
+
+    @staticmethod
+    def expr_star(expr1):
+        """NFA of the star of an expression."""
+        initial_state = State(ThompsonConstruction.get_state_name())
+        out_state = State(ThompsonConstruction.get_state_name())
+
+        initial_state.add_transition('$', [expr1['initial_state'],
+                                           out_state])
+
+        expr1['out_state'].add_transition('$', [expr1['initial_state'],
+                                                out_state])
+
+        return {'initial_state': initial_state,
+                'out_state': out_state}
+
+    @staticmethod
+    def expr_concat(expr1, expr2):
+        """NFA of the concatenation of two expressions."""
+        expr1['out_state'].clone_transitions(expr2['initial_state'])
+
+        return {'initial_state': expr1['initial_state'],
+                'out_state': expr2['out_state']}

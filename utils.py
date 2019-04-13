@@ -73,6 +73,7 @@ def add_explicit_concatenation(infix):
     return infix
 
 class Node():
+    """Node of an expression tree."""
     def __init__(self, value=None, left=None, right=None):
         self.value, self.left, self.right = value, left, right
 
