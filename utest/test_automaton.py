@@ -6,9 +6,10 @@ import logging
 
 sys.path.append('..')
 from automaton import State, Automaton
+import utils
 
 class TestAutomaton(unittest.TestCase):
-    """Perform utests for :class:`~automaton.Automaton` class."""
+    """Utests for :class:`~automaton.Automaton` class."""
 
     def setUp(self):
         """Define data and setup environment."""
@@ -123,3 +124,25 @@ class TestAutomaton(unittest.TestCase):
         self.assertEqual(len(D.Q[4].ready), 3)
 
         self.assertEqual(len(D.Q[5].ready), 0)
+
+class TestUtils(unittest.TestCase):
+    """Utests for utils."""
+
+    def setUp(self):
+        """Define data and setup environment."""
+        # disable logging at all levels
+        logging.disable(logging.CRITICAL)
+
+    def test_infix2postfix(self):
+        """Test infix2postfix."""
+        infix = '(a+b)*(a+c)+a+b*c'
+        self.assertEqual(utils.infix2postfix(infix), 'ab+ac+*a+bc*+')
+
+    def test_postfix_eval(self):
+        """Test postfix_eval."""
+        def op_apply(op, x, y):
+            if op == '*': return int(x) * int(y)
+            elif op == '+': return int(x) + int(y)
+
+        postfix = utils.infix2postfix('((2 + 3) * (4 + 5) + 1)*2 + 1')
+        self.assertEqual(utils.postfix_eval(postfix, op_apply), 93)

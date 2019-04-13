@@ -13,7 +13,7 @@ class State:
 
         Parameters
         -----------
-        name : imutable object (e.g., :obj:`str`)
+        name : imutable object (e.g., :obj:`str`, :obj:`frozenset`)
             Name of the state.
 
         """
@@ -21,7 +21,7 @@ class State:
         self.transitions = defaultdict(list)
 
         self.active = False
-        self.newly_activated = False
+        self._newly_activated = False
 
     def is_active(self):
         return self.active
@@ -55,17 +55,17 @@ class State:
         return U
 
     def _is_newly_activated(self):
-        return self.newly_activated
+        return self._newly_activated
 
     def _reset_new_activation(self):
-        self.newly_activated = False
+        self._newly_activated = False
 
     def _activate(self):
         """Activate the state.
 
         In addition, recursively activate states reachable by epsilon transitions.
         """
-        self.active = self.newly_activated = True
+        self.active = self._newly_activated = True
         log.info('activate: {}'.format(self.name))
         # if this check is not performed, '$' is added to the defaultdict transitions
         if '$' in self.transitions:
@@ -74,7 +74,7 @@ class State:
 
     def _deactivate(self, where=None):
         """Deactivate the state."""
-        self.active = self.newly_activated = False
+        self.active = self._newly_activated = False
         log.info('deactivate: {} ({})'.format(self.name, where))
 
     def __repr__(self):
