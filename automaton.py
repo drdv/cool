@@ -376,31 +376,50 @@ class Automaton:
         return '{}: {}'.format(self.name,
                                sorted([s.name for s in self.active_states]))
 
-_STATE_REGISTER = []
+class StateRegister:
+    """State register.
+
+    Its purpose is to create states with unique names and manipulate them.
+    """
+    def __init__(self):
+        self.registered_states = []
+        self.current_id = 0 # doesn't decrease when states are dropped from the register.
+
+    def new_state(self):
+        """Register new state and return it."""
+        self.registered_states.append(State('s' + str(self.current_id)))
+        self.current_id += 1
+        return self.registered_states[-1]
+
+    def unregister_state(self, state):
+        """Remove state from register."""
+        self.registered_states.remove(state)
+
 class ThompsonConstruction:
     """Regex to NFA."""
-    @staticmethod
-    def get_state_name():
-        new_state = State('s{}'.format(len(_STATE_REGISTER)))
-        _STATE_REGISTER.append(new_state)
-        return new_state
+    def __init__(self):
+        self.state_register = StateRegister();
 
-    @staticmethod
-    def create_expr(letter):
-        """NFA of a new expression."""
-        initial_state = State(ThompsonConstruction.get_state_name())
-        out_state = State(ThompsonConstruction.get_state_name())
+    # def authomaton(name):
+    # return Automaton(name,
+    # self.registered_states,
+    # ['a', 'b'],
+    # expr5['initial_state'], expr5['out_state'])
+
+    def create_expr(self, letter):
+        """NFA for a new expression."""
+        initial_state = self.state_register.new_state()
+        out_state = self.state_register.new_state()
 
         initial_state.add_transition(letter, out_state)
 
         return {'initial_state': initial_state,
                 'out_state': out_state}
 
-    @staticmethod
-    def expr_union(expr1, expr2):
-        """NFA of the union of two expressions."""
-        initial_state = State(ThompsonConstruction.get_state_name())
-        out_state = State(ThompsonConstruction.get_state_name())
+    def expr_union(self, expr1, expr2):
+        """NFA for the union of two expressions."""
+        initial_state = self.state_register.new_state()
+        out_state = self.state_register.new_state()
 
         initial_state.add_transition('$', [expr1['initial_state'],
                                            expr2['initial_state']])
@@ -411,11 +430,10 @@ class ThompsonConstruction:
         return {'initial_state': initial_state,
                 'out_state': out_state}
 
-    @staticmethod
-    def expr_star(expr1):
-        """NFA of the star of an expression."""
-        initial_state = State(ThompsonConstruction.get_state_name())
-        out_state = State(ThompsonConstruction.get_state_name())
+    def expr_star(self, expr1):
+        """NFA for the star of an expression."""
+        initial_state = self.state_register.new_state()
+        out_state = self.state_register.new_state()
 
         initial_state.add_transition('$', [expr1['initial_state'],
                                            out_state])
@@ -426,10 +444,10 @@ class ThompsonConstruction:
         return {'initial_state': initial_state,
                 'out_state': out_state}
 
-    @staticmethod
-    def expr_concat(expr1, expr2):
-        """NFA of the concatenation of two expressions."""
+    def expr_concat(self, expr1, expr2):
+        """NFA for the concatenation of two expressions."""
         expr1['out_state'].clone_transitions(expr2['initial_state'])
+        self.state_register.unregister_state(expr2['initial_state'])
 
         return {'initial_state': expr1['initial_state'],
                 'out_state': expr2['out_state']}

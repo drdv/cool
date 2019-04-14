@@ -1,6 +1,9 @@
 import os
 import subprocess
 import re
+
+from automaton import ThompsonConstruction
+
 from IPython.display import Image, display
 
 def infix2postfix(infix, priority=None):
@@ -72,6 +75,11 @@ def add_explicit_concatenation(infix):
 
     return infix
 
+# class ExpressionTree():
+# def __init__(self):
+# self.root = None
+# self.thompson = ThompsonConstruction()
+
 class Node():
     """Node of an expression tree."""
     def __init__(self, value=None, left=None, right=None):
@@ -126,12 +134,13 @@ class Node():
         dot_str += 'rankdir={}\n'.format(rankdir)
 
         node_names = dict()
-        for node in self.get_nodes():
+        nodes = self.get_nodes()
+        for node in nodes:
             node_names[node] = '{}'.format(len(node_names))
             dot_str += '"{}"[label="{}", shape=circle]\n'.format(node_names[node],
                                                                  node.value)
 
-        for node in self.get_nodes():
+        for node in nodes:
             if node.left is not None:
                 dot_str += '"{}" -> "{}"\n'.format(node_names[node], node_names[node.left])
 
