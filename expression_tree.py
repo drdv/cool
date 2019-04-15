@@ -101,7 +101,7 @@ class Constant(Expression):
         return self.postfix()
 
     def postfix(self):
-        return str(self.value)
+        return str(self.value) + ' '
 
     def evaluate(self):
         return self.value
