@@ -3,11 +3,38 @@ import os
 import subprocess
 from IPython.display import Image, display
 
+import utils
+
+def postfix2tree(postfix):
+    def token_type(character):
+        if character in ['.', '+']: return 'binary'
+        elif character == '*': return '*'
+        return False
+
+    stack = []
+    for l in postfix:
+        if l == '*':
+            v1 = stack.pop()
+            stack.append(Star(v1))
+        elif l == '+':
+            v2, v1 = stack.pop(), stack.pop()
+            stack.append(Add(v1, v2))
+        elif l == '.':
+            v2, v1 = stack.pop(), stack.pop()
+            stack.append(Multiply(v1, v2))
+        else: stack.append(Char(l))
+
+    return stack[0]
+
+def expr(infix):
+    infix = utils.add_explicit_concatenation(infix)
+    postfix = utils.infix2postfix(infix,
+                                  priority={'*': 2, '.': 1, '+': 0})
+
+    return postfix2tree(postfix)
+
 class Expression:
     def description(self):
-        raise NotImplementedError
-
-    def evaluate(self):
         raise NotImplementedError
 
     def postfix(self):
@@ -16,26 +43,12 @@ class Expression:
     def __add__(self, other):
         return Add(self, other)
 
-    def __radd__(self, other):
-        return Add(other, self)
-
-    def __neg__(self):
-        return Negate(self)
-
-    def __sub__(self, other):
-        return Sub(self, other)
-
-    def __pow__(self, p):
-        return Power(self, p)
-
-    def __rsub__(self, other):
-        return Sub(other, self)
-
     def __mul__(self, other):
         return Multiply(self, other)
 
-    def __rmul__(self, other):
-        return Multiply(other, self)
+    def star(self):
+        """Defines a star operator."""
+        return Star(self)
 
     def get_nodes(self):
         """Return a list of nodes in the tree."""
@@ -93,7 +106,8 @@ class Expression:
 
         return dot_str
 
-class Constant(Expression):
+class Char(Expression):
+    """A character class."""
     def __init__(self, value):
         self.value = value
 
@@ -101,9 +115,6 @@ class Constant(Expression):
         return self.postfix()
 
     def postfix(self):
-        return str(self.value) + ' '
-
-    def evaluate(self):
         return self.value
 
     def get_nodes(self):
@@ -118,8 +129,7 @@ class Operator(Expression):
 
 class BinaryOperator(Operator):
     def __init__(self, left, right):
-        self.left = handle_numeric_types(left)
-        self.right = handle_numeric_types(right)
+        self.left, self.right = left, right
 
     def postfix(self):
         return self.left.postfix() + self.right.postfix() + self.description()
@@ -131,36 +141,19 @@ class UnaryOperator(Operator):
     def postfix(self):
         return self.right.postfix() + self.description()
 
-class Power(UnaryOperator):
-    def __init__(self, right, p):
-        super().__init__(right)
-        self.p = p
-
-    def description(self):
-        return '^'
-
-    def evaluate(self):
-        return self.right.evaluate() ** self.p
-
-class Negate(UnaryOperator):
+class Star(UnaryOperator):
     def __init__(self, right):
         super().__init__(right)
 
     def description(self):
-        return '~'
-
-    def evaluate(self):
-        return - self.right.evaluate()
+        return '*'
 
 class Multiply(BinaryOperator):
     def __init__(self, left, right):
         super().__init__(left, right)
 
     def description(self):
-        return '*'
-
-    def evaluate(self):
-        return self.left.evaluate() * self.right.evaluate()
+        return '.'
 
 class Add(BinaryOperator):
     def __init__(self, left, right):
@@ -168,21 +161,3 @@ class Add(BinaryOperator):
 
     def description(self):
         return '+'
-
-    def evaluate(self):
-        return self.left.evaluate() + self.right.evaluate()
-
-class Sub(BinaryOperator):
-    def __init__(self, left, right):
-        super().__init__(left, right)
-
-    def description(self):
-        return '-'
-
-    def evaluate(self):
-        return self.left.evaluate() - self.right.evaluate()
-
-def handle_numeric_types(x):
-    if isinstance(x, (int, float)):
-        return Constant(x)
-    return x
